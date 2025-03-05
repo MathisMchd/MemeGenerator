@@ -28,7 +28,7 @@ const s3 = new AWS.S3({
   s3ForcePathStyle: true,
   accessKeyId: 'S3RVER',
   secretAccessKey: 'S3RVER',
-  endpoint: 'http://localhost:4569',
+  endpoint: S3_ENTTY_POINT,
 });
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'meme-generator-dev-images';
@@ -123,7 +123,7 @@ exports.createMeme = async (event) => {
       ACL: 'public-read'
     }).promise();
     
-    const memeUrl = `http://localhost:4569/${BUCKET_NAME}/${s3Key}`;
+    const memeUrl = `${S3_ENTTY_POINT}/${BUCKET_NAME}/${s3Key}`;
     
     const params = {
       TableName: TABLE_NAME,
