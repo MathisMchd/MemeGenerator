@@ -54,6 +54,20 @@ functions:
           path: url/{key}
           method: get
 
+  createMeme:
+    handler: handler.createMeme
+    events:
+      - http:
+          path: url
+          method: post
+
+  getMeme:
+    handler: handler.getMeme
+    events:
+      - http:
+          path: url/{key}
+          method: get
+
 resources:
   Resources:
     UrlTable:
