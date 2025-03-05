@@ -1,5 +1,4 @@
 const AWS = require("aws-sdk");
-const { v4: uuidv4 } = require("uuid");
 const sharp = require('sharp');
 const multer = require("multer");
 const serverless = require("serverless-http");
@@ -14,7 +13,7 @@ AWS.config.update({
 });
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient(
-  process.env.IS_OFFLINE && {
+  {
     region: "localhost",
     endpoint: "http://localhost:8000",
   }
@@ -23,12 +22,10 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient(
 const S3_ENTTY_POINT = 'http://localhost:4569'
 
 const s3 = new AWS.S3({
-  ...(process.env.IS_OFFLINE && {
-    s3ForcePathStyle: true,
-    accessKeyId: 'S3RVER',
-    secretAccessKey: 'S3RVER',
-    endpoint: S3_ENTTY_POINT,
-  })
+  s3ForcePathStyle: true,
+  accessKeyId: 'S3RVER',
+  secretAccessKey: 'S3RVER',
+  endpoint: 'http://localhost:4569',
 });
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'meme-generator-dev-images';
@@ -43,7 +40,7 @@ exports.index = async (event) => {
   };
 };
 
-exports.getAllImages = async (event) => {
+exports.getAllMemes = async (event) => {
   try {
     const params = {
       TableName: TABLE_NAME,
@@ -79,22 +76,18 @@ exports.createMeme = async (event) => {
       imageBuffer = await response.arrayBuffer();
       imageBuffer = Buffer.from(imageBuffer);
     } else {
-      // Handle base64 encoded images
       const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
       imageBuffer = Buffer.from(base64Data, 'base64');
     }
-
-    // First resize the image
+    
     const width = 800;
     const height = 600;
     const resizedImage = await sharp(imageBuffer)
       .resize(width, height, { fit: 'inside' })
       .toBuffer();
-
-    // Get the metadata of the resized image to get its actual dimensions
+    
     const metadata = await sharp(resizedImage).metadata();
-
-    // Create an SVG with the exact dimensions of the resized image
+    
     const svgText = `
       <svg width="${metadata.width}" height="${metadata.height}">
         <style>
@@ -105,14 +98,12 @@ exports.createMeme = async (event) => {
     `;
 
     const svgBuffer = Buffer.from(svgText);
-
-    // Process the image with text overlay
+    
     const memeBuffer = await sharp(resizedImage)
       .composite([{ input: svgBuffer }])
       .jpeg()
       .toBuffer();
-
-    // Upload to S3
+    
     const s3Key = `${memeId}.jpg`;
     await s3.putObject({
       Bucket: BUCKET_NAME,
@@ -121,13 +112,11 @@ exports.createMeme = async (event) => {
       ContentType: 'image/jpeg',
       ACL: 'public-read'
     }).promise();
-
-    // Get the URL for the uploaded image
-    const memeUrl = process.env.IS_OFFLINE
-      ? `${S3_ENTTY_POINT}/${BUCKET_NAME}/${s3Key}`
+    
+    const memeUrl = process.env.IS_OFFLINE 
+      ? `http://localhost:4569/${BUCKET_NAME}/${s3Key}`
       : `https://${BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
-
-    // Store metadata in DynamoDB
+    
     const params = {
       TableName: TABLE_NAME,
       Item: {
@@ -139,7 +128,6 @@ exports.createMeme = async (event) => {
         views: 0,
       },
     };
-
     await dynamoDb.put(params).promise();
 
     return {

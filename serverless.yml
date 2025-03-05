@@ -46,10 +46,10 @@ functions:
           method: get
 
   getUrl:
-    handler: handler.getAllImages
+    handler: handler.getAllMemes
     events:
       - http:
-          path: images
+          path: memes
           method: get
   
   createMeme:
