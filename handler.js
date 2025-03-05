@@ -66,10 +66,8 @@ exports.createMeme = async (event) => {
   try {
     const { imageUrl, text } = JSON.parse(event.body);
 
-    // Generate a unique ID for the meme
     const memeId = uuidv4().slice(0, 8);
 
-    // Download the image (if it's a URL) or use base64 data
     let imageBuffer;
     if (imageUrl.startsWith('http')) {
       const response = await fetch(imageUrl);

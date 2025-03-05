@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Meme Generator</title>
+        <style>
+            * {
+                box-sizing: border-box;
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            }
+            body {
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            h1 {
+                color: #333;
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .form-container {
+                background-color: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                margin-bottom: 30px;
+            }
+            .form-group {
+                margin-bottom: 15px;
+            }
+            label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+            input,
+            textarea {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+            button {
+                background-color: #4caf50;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                cursor: pointer;
+                font-size: 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            button:hover {
+                background-color: #45a049;
+            }
+            .meme-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            .meme-card {
+                background-color: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s;
+            }
+            .meme-card:hover {
+                transform: translateY(-5px);
+            }
+            .meme-image {
+                width: 100%;
+                height: 250px;
+                object-fit: cover;
+                border-bottom: 1px solid #eee;
+                cursor: pointer;
+            }
+            .meme-info {
+                padding: 15px;
+            }
+            .meme-text {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            .meme-date {
+                color: #777;
+                font-size: 14px;
+            }
+            .loading {
+                text-align: center;
+                font-size: 18px;
+                margin: 50px 0;
+            }
+            .error {
+                background-color: #ffebee;
+                color: #c62828;
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 15px;
+            }
+            /* Modal styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+            .modal-content {
+                margin: 15% auto;
+                display: block;
+                width: 80%;
+                max-width: 700px;
+            }
+            .close {
+                position: absolute;
+                top: 15px;
+                right: 35px;
+                color: #fff;
+                font-size: 40px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container"><h1>Meme Generator</h1></div>
+        <div class="form-container">
+            <h2>Create a New Meme</h2>
+            <div id="errorContainer" style="display: none;" class="error"></div>
+
+            <div class="form-group">
+                <label for="imageUrl">Image URL:</label>
+                <input type="text" id="imageUrl" placeholder="Enter image URL or paste base64 image data" />
+            </div>
+
+            <div class="form-group">
+                <label for="memeText">Meme Text:</label>
+                <input type="text" id="memeText" placeholder="Enter meme text" />
+            </div>
+
+            <button id="createMeme">Generate Meme</button>
+        </div>
+
+        <h2>All Memes</h2>
+        <div id="memesContainer" class="meme-grid">
+            <div class="loading">Loading memes...</div>
+        </div>
+
+        <!-- The Modal -->
+        <div id="myModal" class="modal">
+            <span class="close">&times;</span>
+            <img class="modal-content" id="img01">
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const apiUrl = "http://localhost:3000/dev";
+
+                // Load all memes when page loads
+                fetchMemes();
+
+                // Handle form submission
+                document.getElementById("createMeme").addEventListener("click", createMeme);
+
+                async function fetchMemes() {
+                    try {
+                        const response = await fetch(`${apiUrl}/memes`);
+                        if (!response.ok) {
+                            throw new Error("Failed to fetch memes");
+                        }
+
+                        const memes = await response.json();
+                        displayMemes(memes);
+                    } catch (error) {
+                        console.error("Error fetching memes:", error);
+                        showError("Failed to load memes. Please try again later.");
+                    }
+                }
+
+                function displayMemes(memes) {
+                    const memesContainer = document.getElementById("memesContainer");
+                    memesContainer.innerHTML = "";
+
+                    if (!memes || memes.length === 0) {
+                        memesContainer.innerHTML = "<p>No memes found. Create your first meme!</p>";
+                        return;
+                    }
+
+                    memes.forEach((meme) => {
+                        const memeCard = document.createElement("div");
+                        memeCard.className = "meme-card";
+
+                        const date = new Date(meme.createdAt);
+                        const formattedDate = date.toLocaleDateString() + " " + date.toLocaleTimeString();
+
+                        memeCard.innerHTML = `
+                        <img src="${meme.imageUrl}" alt="Meme" class="meme-image">
+                        <div class="meme-info">
+                            <div class="meme-text">${meme.text}</div>
+                            <div class="meme-date">Created: ${formattedDate}</div>
+                        </div>
+                    `;
+
+                        memesContainer.appendChild(memeCard);
+                    });
+
+                    // Add click event to images
+                    document.querySelectorAll(".meme-image").forEach((img) => {
+                        img.addEventListener("click", openModal);
+                    });
+                }
+
+                async function createMeme() {
+                    const imageUrl = document.getElementById("imageUrl").value.trim();
+                    const text = document.getElementById("memeText").value.trim();
+
+                    // Simple validation
+                    if (!imageUrl) {
+                        showError("Please enter an image URL");
+                        return;
+                    }
+
+                    if (!text) {
+                        showError("Please enter meme text");
+                        return;
+                    }
+
+                    hideError();
+
+                    try {
+                        const response = await fetch(`${apiUrl}/meme`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({ imageUrl, text }),
+                        });
+
+                        if (!response.ok) {
+                            throw new Error("Failed to create meme");
+                        }
+
+                        const result = await response.json();
+                        console.log("Meme created:", result);
+
+                        // Clear the form
+                        document.getElementById("imageUrl").value = "";
+                        document.getElementById("memeText").value = "";
+
+                        // Reload memes
+                        fetchMemes();
+                    } catch (error) {
+                        console.error("Error creating meme:", error);
+                        showError("Failed to create meme. Please try again.");
+                    }
+                }
+
+                function showError(message) {
+                    const errorContainer = document.getElementById("errorContainer");
+                    errorContainer.textContent = message;
+                    errorContainer.style.display = "block";
+                }
+
+                function hideError() {
+                    document.getElementById("errorContainer").style.display = "none";
+                }
+
+                // Modal functionality
+                const modal = document.getElementById("myModal");
+                const modalImg = document.getElementById("img01");
+                const span = document.getElementsByClassName("close")[0];
+
+                function openModal(event) {
+                    modal.style.display = "block";
+                    modalImg.src = event.target.src;
+                }
+
+                span.onclick = function () {
+                    modal.style.display = "none";
+                }
+
+                window.onclick = function (event) {
+                    if (event.target == modal) {
+                        modal.style.display = "none";
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>

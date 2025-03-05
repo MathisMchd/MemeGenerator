@@ -23,7 +23,6 @@
     "uuid": "^11.0.5"
   },
   "devDependencies": {
-    "serverless-dynamodb": "^0.2.56",
     "serverless-dynamodb-local": "^0.2.40",
     "serverless-offline": "^14.4.0",
     "serverless-s3-local": "^0.8.5"
