@@ -43,6 +43,10 @@ exports.index = async (event) => {
   };
 };
 
+/**
+ * Retourne un tableau de tous les memes
+ * Chaque meme contient l'URL de l'image, le texte, la date de création et le nombre de vues.
+ */
 exports.getAllMemes = async (event) => {
   try {
     const params = {
@@ -65,6 +69,11 @@ exports.getAllMemes = async (event) => {
   }
 }
 
+/**
+ * Crée un meme à partir d'une image et d'un texte
+ * Prend en entrée une URL d'image et un texte
+ * Crée un meme avec le texte sur l'image, sauvegarde sur S3 et l'URL de l'image sur dynamodb.
+ */
 exports.createMeme = async (event) => {
   try {
     const { imageUrl, text } = JSON.parse(event.body);
@@ -114,9 +123,7 @@ exports.createMeme = async (event) => {
       ACL: 'public-read'
     }).promise();
     
-    const memeUrl = process.env.IS_OFFLINE 
-      ? `http://localhost:4569/${BUCKET_NAME}/${s3Key}`
-      : `https://${BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
+    const memeUrl = `http://localhost:4569/${BUCKET_NAME}/${s3Key}`;
     
     const params = {
       TableName: TABLE_NAME,
@@ -169,11 +176,9 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
 
     const imageBuffer = file.buffer;
 
-    // Obtenir les dimensions de l'image d'origine
     const metadata = await sharp(imageBuffer).metadata();
     const { width, height } = metadata;
 
-    // Créer un SVG avec des dimensions proportionnelles à l'image d'origine
     const svgText = `
       <svg width="${width}" height="${height}">
         <style>
@@ -185,7 +190,6 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
 
     const svgBuffer = Buffer.from(svgText);
 
-    // Ajouter le texte à l'image avec sharp
     const imageWithText = await sharp(imageBuffer)
       .composite([
         {
@@ -196,7 +200,6 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
       ])
       .toBuffer();
 
-    // Nom de l'image dans S3
     const memeId = uuidv4().slice(0, 8);
     const s3Key = `${memeId}`;
 
@@ -212,11 +215,8 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
       .promise();
 
     // L'URL de l'image sur S3
-    const memeUrl = process.env.IS_OFFLINE
-      ? `${S3_ENTTY_POINT}/${BUCKET_NAME}/${s3Key}`
-      : `https://${BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
+    const memeUrl = `${S3_ENTTY_POINT}/${BUCKET_NAME}/${s3Key}`;
 
-    // Stocker dans DynamoDB
     const params = {
       TableName: TABLE_NAME,
       Item: {
@@ -231,7 +231,6 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
 
     await dynamoDb.put(params).promise();
 
-    // Retourner l'URL de l'image
     res.status(200).json({
       memeId,
       memeUrl,
@@ -245,19 +244,20 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
 
 module.exports.uploadImageWithText = serverless(app);
 
+/**
+ * Affiche du html qui permet de créer un meme
+ */
 exports.serveHtml = async (event) => {
   try {
-    // Chemin vers le fichier HTML
     const htmlPath = path.join(__dirname, "index.html");
     
-    // Lecture du fichier HTML
     const html = fs.readFileSync(htmlPath, "utf8");
     
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "text/html",
-        "Access-Control-Allow-Origin": "*" // Pour CORS
+        "Access-Control-Allow-Origin": "*"
       },
       body: html,
     };
