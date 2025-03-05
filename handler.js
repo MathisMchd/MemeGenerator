@@ -1,5 +1,4 @@
 const AWS = require("aws-sdk");
-const { v4: uuidv4 } = require("uuid");
 const sharp = require('sharp');
 const multer = require("multer");
 const serverless = require("serverless-http");
@@ -14,7 +13,7 @@ AWS.config.update({
 });
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient(
-  process.env.IS_OFFLINE && {
+  {
     region: "localhost",
     endpoint: "http://localhost:8000",
   }
@@ -23,12 +22,10 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient(
 const S3_ENTTY_POINT = 'http://localhost:4569'
 
 const s3 = new AWS.S3({
-  ...(process.env.IS_OFFLINE && {
-    s3ForcePathStyle: true,
-    accessKeyId: 'S3RVER',
-    secretAccessKey: 'S3RVER',
-    endpoint: S3_ENTTY_POINT,
-  })
+  s3ForcePathStyle: true,
+  accessKeyId: 'S3RVER',
+  secretAccessKey: 'S3RVER',
+  endpoint: 'http://localhost:4569',
 });
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'meme-generator-dev-images';
