@@ -38,25 +38,11 @@ functions:
           path: ""
           method: get
 
-  createUrl:
-    handler: handler.createUrl
-    events:
-      - http:
-          path: url
-          method: post
-
-  listUrls:
-    handler: handler.listUrls
-    events:
-      - http:
-          path: url
-          method: get
-
   getUrl:
-    handler: handler.getUrl
+    handler: handler.getAllImages
     events:
       - http:
-          path: url/{key}
+          path: images
           method: get
   
   createMeme:
