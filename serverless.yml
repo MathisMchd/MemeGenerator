@@ -10,6 +10,7 @@ provider:
   runtime: nodejs20.x
   stage: dev
   region: us-east-1
+  timeout: 30    # 30 seconds
   environment:
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
     S3_BUCKET_NAME: meme-generator-${opt:stage, self:provider.stage}-images
@@ -65,7 +66,7 @@ functions:
       - http:
           path: uploadImageWithText
           method: post
-          
+
 resources:
   Resources:
     UrlTable:

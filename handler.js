@@ -156,45 +156,49 @@ exports.createMeme = async (event) => {
  */
 app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
   try {
-
     const file = req.file;
     const text = req.body.text;
 
-    if (!file || text) {
+    if (!file || !text) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: "Image file and text are required" }),
       };
     }
 
-    // Ajouter le texte sur l'image
-    const memeId = uuidv4().slice(0, 8);
+    const imageBuffer = file.buffer;
 
+    // Obtenir les dimensions de l'image d'origine
+    const metadata = await sharp(imageBuffer).metadata();
+    const { width, height } = metadata;
 
-    // Décoder l'image depuis la base64
-    const imageBuffer = req.file.buffer
+    // Créer un SVG avec des dimensions proportionnelles à l'image d'origine
+    const svgText = `
+      <svg width="${width}" height="${height}">
+        <style>
+          .title { fill: white; font-size: ${Math.floor(width / 20)}px; font-weight: bold; text-shadow: 2px 2px 2px black; }
+        </style>
+        <text x="50%" y="50%" text-anchor="middle" class="title">${text}</text>
+      </svg>
+    `;
 
+    const svgBuffer = Buffer.from(svgText);
 
-    // Utilisation de sharp pour ajouter le texte
+    // Ajouter le texte à l'image avec sharp
     const imageWithText = await sharp(imageBuffer)
       .composite([
         {
-          input: Buffer.from(
-            `<svg width="800" height="600">
-               <style>
-                 .title { fill: white; font-size: 40px; font-weight: bold; text-shadow: 2px 2px 2px black; }
-               </style>
-               <text x="50%" y="50%" text-anchor="middle" class="title">${text}</text>
-             </svg>`
-          ),
-          top: 0,
+          input: svgBuffer,
+          top: Math.floor(height * 0.1),
           left: 0,
-        },
+        }
       ])
       .toBuffer();
 
     // Nom de l'image dans S3
-    const s3Key = `${memeId}.jpg`;
+    const memeId = uuidv4().slice(0, 8);
+    const s3Key = `${memeId}`;
+
 
     // Upload de l'image avec texte sur S3
     await s3
@@ -227,21 +231,15 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
 
     await dynamoDb.put(params).promise();
 
-    // Retourner l'URL de l'image générée
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        memeId,
-        memeUrl,
-        downloadUrl: memeUrl,
-      }),
-    };
+    // Retourner l'URL de l'image
+    res.status(200).json({
+      memeId,
+      memeUrl,
+    });
+
   } catch (error) {
     console.error("Error uploading image with text:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Failed to upload image", message: error.message }),
-    };
+    res.status(500).json({ error: "Failed to upload image", message: error.message });
   }
 });
 
