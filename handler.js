@@ -1,9 +1,11 @@
 const AWS = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
 const sharp = require('sharp');
-const { nanoid } = require('nanoid');
 const multer = require("multer");
+const serverless = require("serverless-http");
 
+const app = require("express")();
+const upload = multer({ storage: multer.memoryStorage() });
 
 AWS.config.update({
   region: 'localhost',
@@ -18,12 +20,14 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient(
   }
 );
 
+const S3_ENTTY_POINT = 'http://localhost:4569'
+
 const s3 = new AWS.S3({
   ...(process.env.IS_OFFLINE && {
     s3ForcePathStyle: true,
     accessKeyId: 'S3RVER',
     secretAccessKey: 'S3RVER',
-    endpoint: 'http://localhost:4569',
+    endpoint: S3_ENTTY_POINT,
   })
 });
 
@@ -66,7 +70,7 @@ exports.createMeme = async (event) => {
     const { imageUrl, text } = JSON.parse(event.body);
 
     // Generate a unique ID for the meme
-    const memeId = nanoid(8);
+    const memeId = uuidv4().slice(0, 8);
 
     // Download the image (if it's a URL) or use base64 data
     let imageBuffer;
@@ -120,7 +124,7 @@ exports.createMeme = async (event) => {
 
     // Get the URL for the uploaded image
     const memeUrl = process.env.IS_OFFLINE
-      ? `http://localhost:4569/${BUCKET_NAME}/${s3Key}`
+      ? `${S3_ENTTY_POINT}/${BUCKET_NAME}/${s3Key}`
       : `https://${BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
 
     // Store metadata in DynamoDB
@@ -162,25 +166,29 @@ exports.createMeme = async (event) => {
  * Prend en entré un fichier image et un texte
  * Les combines, sauvegarde sur S3 et l'url d'accès de l'image sur dynamodb.
  */
-exports.uploadImageWithText = async (event) => {
+app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
   try {
-    const { text } = JSON.parse(event.body);
 
-    // Récupérer l'image depuis le body de la requête (généralement dans 'event.body')
-    const file = event.isBase64Encoded ? Buffer.from(event.body, "base64") : null;
+    const file = req.file;
+    const text = req.body.text;
 
-    if (!file) {
+    if (!file || text) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Image file is required" }),
+        body: JSON.stringify({ error: "Image file and text are required" }),
       };
     }
 
     // Ajouter le texte sur l'image
-    const memeId = nanoid(8);
+    const memeId = uuidv4().slice(0, 8);
+
+
+    // Décoder l'image depuis la base64
+    const imageBuffer = req.file.buffer
+
 
     // Utilisation de sharp pour ajouter le texte
-    const imageWithText = await sharp(file)
+    const imageWithText = await sharp(imageBuffer)
       .composite([
         {
           input: Buffer.from(
@@ -213,7 +221,7 @@ exports.uploadImageWithText = async (event) => {
 
     // L'URL de l'image sur S3
     const memeUrl = process.env.IS_OFFLINE
-      ? `http://localhost:4569/${BUCKET_NAME}/${s3Key}`
+      ? `${S3_ENTTY_POINT}/${BUCKET_NAME}/${s3Key}`
       : `https://${BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
 
     // Stocker dans DynamoDB
@@ -247,4 +255,6 @@ exports.uploadImageWithText = async (event) => {
       body: JSON.stringify({ error: "Failed to upload image", message: error.message }),
     };
   }
-};
+});
+
+module.exports.uploadImageWithText = serverless(app);

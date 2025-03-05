@@ -30,6 +30,12 @@ provider:
           Resource:
             - "arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}"
             - "arn:aws:s3:::${self:provider.environment.S3_BUCKET_NAME}/*"
+
+  apiGateway:
+    binaryMediaTypes:
+      - '*/*'  # Accepte tous les types binaires
+
+
 functions:
   hello:
     handler: handler.index
@@ -53,6 +59,13 @@ functions:
           method: post
           cors: true
 
+  uploadImageWithText:
+    handler: handler.uploadImageWithText
+    events:
+      - http:
+          path: uploadImageWithText
+          method: post
+          
 resources:
   Resources:
     UrlTable:
@@ -97,3 +110,4 @@ custom:
   serverless-s3-local:
     directory: ./buckets
     port: 4569
+

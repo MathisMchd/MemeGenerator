@@ -3,6 +3,9 @@
 ## Prerequisites
 - Node.js installed
 - Serverless Framework installed (`npm install -g serverless`)
+- S3 (`npm install serverless-s3-local`)
+- Sharp : combinaison texte et image (`npm i sharp`)
+- Multer : Manipulation Image (`npm i multer`)
 
 ## Starting the Project Locally
 
