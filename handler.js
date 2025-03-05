@@ -3,13 +3,11 @@ const { v4: uuidv4 } = require("uuid");
 const sharp = require('sharp');
 const { nanoid } = require('nanoid');
 
-if (process.env.IS_OFFLINE) {
-  AWS.config.update({
-    region: 'localhost',
-    accessKeyId: 'S3RVER', 
-    secretAccessKey: 'S3RVER'
-  });
-}
+AWS.config.update({
+  region: 'localhost',
+  accessKeyId: 'S3RVER', 
+  secretAccessKey: 'S3RVER'
+});
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient(
   process.env.IS_OFFLINE && {
