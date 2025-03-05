@@ -19,3 +19,6 @@ logs/
 # IDE specific files
 .vscode/
 .idea/
+
+# CUSTOM
+buckets/
