@@ -41,16 +41,10 @@ exports.getAllImages = async (event) => {
   try {
     const params = {
       TableName: TABLE_NAME,
-      KeyConditionExpression: "#type = :type",
-      ExpressionAttributeNames: {
-        "#type": "type",
-      },
-      ExpressionAttributeValues: {
-        ":type": "meme",
-      },
+
     };
 
-    const result = await dynamoDb.query(params).promise();
+    const result = await dynamoDb.scan(params).promise();
 
     return {
       statusCode: 200,
