@@ -38,8 +38,8 @@ provider:
 
 
 functions:
-  hello:
-    handler: handler.index
+  serveHtml:
+    handler: handler.serveHtml
     events:
       - http:
           path: ""

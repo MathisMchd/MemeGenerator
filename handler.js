@@ -3,6 +3,8 @@ const sharp = require('sharp');
 const multer = require("multer");
 const serverless = require("serverless-http");
 const { v4: uuidv4 } = require("uuid");
+const path = require("path");
+const fs = require("fs");
 
 const app = require("express")();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -242,3 +244,28 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
 });
 
 module.exports.uploadImageWithText = serverless(app);
+
+exports.serveHtml = async (event) => {
+  try {
+    // Chemin vers le fichier HTML
+    const htmlPath = path.join(__dirname, "index.html");
+    
+    // Lecture du fichier HTML
+    const html = fs.readFileSync(htmlPath, "utf8");
+    
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "text/html",
+        "Access-Control-Allow-Origin": "*" // Pour CORS
+      },
+      body: html,
+    };
+  } catch (error) {
+    console.error("Error serving HTML:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to serve HTML page", message: error.message }),
+    };
+  }
+};

@@ -203,6 +203,8 @@
                         return;
                     }
 
+                    memes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
                     memes.forEach((meme) => {
                         const memeCard = document.createElement("div");
                         memeCard.className = "meme-card";
@@ -256,7 +258,7 @@
                                 body: formData
                             });
                         } else {
-                            const response = await fetch(`${apiUrl}/meme`, {
+                            response = await fetch(`${apiUrl}/meme`, {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
