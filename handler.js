@@ -2,6 +2,7 @@ const AWS = require("aws-sdk");
 const sharp = require('sharp');
 const multer = require("multer");
 const serverless = require("serverless-http");
+const { v4: uuidv4 } = require("uuid");
 
 const app = require("express")();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -196,7 +197,6 @@ app.post('/uploadImageWithText', upload.single('file'), async (req, res) => {
     // Nom de l'image dans S3
     const memeId = uuidv4().slice(0, 8);
     const s3Key = `${memeId}`;
-
 
     // Upload de l'image avec texte sur S3
     await s3

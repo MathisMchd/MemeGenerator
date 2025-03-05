@@ -145,6 +145,10 @@
                 <label for="imageUrl">Image URL:</label>
                 <input type="text" id="imageUrl" placeholder="Enter image URL or paste base64 image data" />
             </div>
+            <div class="form-group">
+                <label for="imageFile">Upload Image:</label>
+                <input type="file" id="imageFile" accept="image/*" />
+            </div>
 
             <div class="form-group">
                 <label for="memeText">Meme Text:</label>
@@ -225,10 +229,11 @@
 
                 async function createMeme() {
                     const imageUrl = document.getElementById("imageUrl").value.trim();
+                    const imageFile = document.getElementById("imageFile").files[0];
                     const text = document.getElementById("memeText").value.trim();
 
                     // Simple validation
-                    if (!imageUrl) {
+                    if (!imageUrl && !imageFile) {
                         showError("Please enter an image URL");
                         return;
                     }
@@ -241,20 +246,30 @@
                     hideError();
 
                     try {
-                        const response = await fetch(`${apiUrl}/meme`, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({ imageUrl, text }),
-                        });
+                        if (imageFile) {
+                            const formData = new FormData();
+                            formData.append('file', imageFile);
+                            formData.append('text', text);
+                            
+                            response = await fetch(`${apiUrl}/uploadImageWithText`, {
+                                method: "POST",
+                                body: formData
+                            });
+                        } else {
+                            const response = await fetch(`${apiUrl}/meme`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ imageUrl, text }),
+                            });
+                        }
 
                         if (!response.ok) {
                             throw new Error("Failed to create meme");
                         }
 
                         const result = await response.json();
-                        console.log("Meme created:", result);
 
                         // Clear the form
                         document.getElementById("imageUrl").value = "";
