@@ -45,6 +45,9 @@ MemeGenerator/
 └── buckets/              # Stockage local pour S3
 ````
 
+## Website
+Use the index.html to see & create memes !
+
 ## API
 1. Création d'un memes \
 ```Endpoint POST /meme```
